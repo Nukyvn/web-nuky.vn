@@ -23,8 +23,8 @@ $footer_categories = $pdo->query("SELECT id, name, slug FROM categories WHERE st
                         onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
                         onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">
                         <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                            <path
-                                d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 16.663c-.319.475-.794.894-1.413 1.244-.619.35-1.369.594-2.231.731a10.467 10.467 0 01-2.663.175c-.894-.05-1.719-.175-2.456-.375-.738-.2-1.369-.469-1.894-.806-.525-.338-.938-.75-1.238-1.238-.3-.487-.45-1.05-.45-1.688 0-.475.1-.919.3-1.331.2-.413.494-.781.881-1.106.388-.325.856-.594 1.406-.806.55-.213 1.163-.369 1.838-.469.675-.1 1.419-.156 2.231-.169.813-.012 1.688.038 2.625.15.938.113 1.913.294 2.925.544.388.1.738.238 1.05.413.313.175.569.394.769.656.2.263.344.569.431.919.088.35.119.731.094 1.144-.025.412-.119.831-.281 1.256z" />
+                            <circle cx="12" cy="12" r="11" stroke="currentColor" stroke-width="1" fill="none"/>
+                            <text x="12" y="16" text-anchor="middle" font-size="12" font-weight="bold" fill="currentColor">Z</text>
                         </svg>
                     </a>
                     <a href="mailto:<?= get_setting('contact_email') ?>" class="transition"
