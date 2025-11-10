@@ -1,10 +1,10 @@
 <?php
 require_once 'config.php';
 
-// Get hero banner
-$stmt = $pdo->prepare("SELECT * FROM banners WHERE position = 'hero' AND status = 1 ORDER BY sort_order ASC LIMIT 3");
+// Get hero banners for slider
+$stmt = $pdo->prepare("SELECT * FROM banners WHERE position = 'hero' AND status = 1 ORDER BY sort_order ASC LIMIT 5");
 $stmt->execute();
-$hero_banner = $stmt->fetch();
+$hero_banners = $stmt->fetchAll();
 
 // Get featured products
 $stmt = $pdo->prepare("SELECT * FROM products WHERE featured = 1 AND status = 1 ORDER BY created_at DESC LIMIT 8");
@@ -39,35 +39,176 @@ $page_description = 'Chuyên sản xuất trà đen, bột kem béo, trà gạo 
 include 'includes/header.php';
 ?>
 
-<!-- Hero Section -->
-<?php if ($hero_banner): ?>
-<section class="hero-section relative overflow-hidden" style="background-color: <?= COLOR_SECONDARY ?>">
-    <?php if ($hero_banner['video']): ?>
-    <video autoplay muted loop playsinline class="w-full h-[500px] md:h-[600px] object-cover">
-        <source src="<?= $hero_banner['video'] ?>" type="video/mp4">
-    </video>
-    <?php elseif ($hero_banner['image']): ?>
-    <img src="<?= $hero_banner['image'] ?>" alt="<?= $hero_banner['title'] ?>"
-        class="w-full h-[500px] md:h-[600px] object-cover">
-    <?php endif; ?>
+<!-- Hero Slider Section -->
+<?php if (!empty($hero_banners)): ?>
+<section class="hero-slider relative overflow-hidden" style="background-color: <?= COLOR_SECONDARY ?>">
+    <div class="relative h-[500px] md:h-[600px]">
+        <!-- Slides Container -->
+        <div class="slides-container relative h-full">
+            <?php foreach ($hero_banners as $index => $banner): ?>
+            <div class="hero-slide absolute inset-0 transition-all duration-700 ease-in-out <?= $index === 0 ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-full' ?>"
+                data-slide="<?= $index ?>">
+                <!-- Background Image/Video -->
+                <?php if ($banner['video']): ?>
+                <video autoplay muted loop playsinline class="w-full h-full object-cover">
+                    <source src="<?= $banner['video'] ?>" type="video/mp4">
+                </video>
+                <?php elseif ($banner['image']): ?>
+                <img src="<?= $banner['image'] ?>" alt="<?= $banner['title'] ?>"
+                    class="w-full h-full object-cover">
+                <?php endif; ?>
 
-    <div class="absolute inset-0 flex items-center" style="background-color: rgba(255,255,255,0.2)">
-        <div class="container mx-auto px-4">
-            <div class="max-w-2xl text-white">
-                <h1 class="text-4xl md:text-6xl font-bold mb-4"><?= $hero_banner['title'] ?></h1>
-                <?php if ($hero_banner['subtitle']): ?>
-                <p class="text-xl md:text-2xl mb-6"><?= $hero_banner['subtitle'] ?></p>
-                <?php endif; ?>
-                <?php if ($hero_banner['link']): ?>
-                <a href="<?= $hero_banner['link'] ?>"
-                    class="inline-block bg-white text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition">
-                    <?= $hero_banner['button_text'] ?? 'Xem thêm' ?>
-                </a>
-                <?php endif; ?>
+                <!-- Content Overlay -->
+                <div class="absolute inset-0 flex items-center" style="background-color: rgba(0,0,0,0.3)">
+                    <div class="container mx-auto px-4">
+                        <div class="max-w-2xl text-white">
+                            <h1 class="text-4xl md:text-6xl font-bold mb-4 animate-fade-in"><?= $banner['title'] ?></h1>
+                            <?php if ($banner['subtitle']): ?>
+                            <p class="text-xl md:text-2xl mb-6 animate-fade-in-delay"><?= $banner['subtitle'] ?></p>
+                            <?php endif; ?>
+                            <?php if ($banner['link']): ?>
+                            <a href="<?= $banner['link'] ?>"
+                                class="inline-block bg-white text-gray-900 px-8 py-3 rounded-lg font-semibold hover:bg-opacity-90 transition animate-fade-in-delay-2">
+                                <?= $banner['button_text'] ?? 'Xem thêm' ?>
+                            </a>
+                            <?php endif; ?>
+                        </div>
+                    </div>
+                </div>
             </div>
+            <?php endforeach; ?>
         </div>
+
+        <?php if (count($hero_banners) > 1): ?>
+        <!-- Navigation Arrows -->
+        <button onclick="heroSlider.prev()"
+            class="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition z-10 group">
+            <svg class="w-6 h-6 transform group-hover:-translate-x-1 transition" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+        </button>
+        <button onclick="heroSlider.next()"
+            class="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-gray-800 p-3 rounded-full shadow-lg transition z-10 group">
+            <svg class="w-6 h-6 transform group-hover:translate-x-1 transition" fill="none" stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+            </svg>
+        </button>
+
+        <!-- Indicators/Dots -->
+        <div class="absolute bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 z-10">
+            <?php foreach ($hero_banners as $index => $banner): ?>
+            <button onclick="heroSlider.goTo(<?= $index ?>)"
+                class="hero-indicator w-3 h-3 rounded-full transition-all <?= $index === 0 ? 'bg-white w-8' : 'bg-white/50 hover:bg-white/75' ?>"
+                data-indicator="<?= $index ?>">
+            </button>
+            <?php endforeach; ?>
+        </div>
+        <?php endif; ?>
     </div>
 </section>
+
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .animate-fade-in {
+        animation: fadeIn 0.8s ease-out forwards;
+    }
+
+    .animate-fade-in-delay {
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out 0.2s forwards;
+    }
+
+    .animate-fade-in-delay-2 {
+        opacity: 0;
+        animation: fadeIn 0.8s ease-out 0.4s forwards;
+    }
+
+    .hero-slide {
+        transition: opacity 0.7s ease-in-out, transform 0.7s ease-in-out;
+    }
+</style>
+
+<script>
+    const heroSlider = {
+        currentSlide: 0,
+        totalSlides: <?= count($hero_banners) ?>,
+        autoPlayInterval: null,
+
+        init() {
+            if (this.totalSlides > 1) {
+                this.startAutoPlay();
+            }
+        },
+
+        goTo(index) {
+            const slides = document.querySelectorAll('.hero-slide');
+            const indicators = document.querySelectorAll('.hero-indicator');
+
+            // Hide current slide
+            slides[this.currentSlide].classList.remove('opacity-100', 'translate-x-0');
+            slides[this.currentSlide].classList.add('opacity-0', 'translate-x-full');
+
+            // Update indicators
+            indicators[this.currentSlide].classList.remove('bg-white', 'w-8');
+            indicators[this.currentSlide].classList.add('bg-white/50');
+
+            // Update current slide
+            this.currentSlide = index;
+
+            // Show new slide
+            slides[this.currentSlide].classList.remove('opacity-0', 'translate-x-full', '-translate-x-full');
+            slides[this.currentSlide].classList.add('opacity-100', 'translate-x-0');
+
+            // Update indicators
+            indicators[this.currentSlide].classList.remove('bg-white/50');
+            indicators[this.currentSlide].classList.add('bg-white', 'w-8');
+
+            // Reset autoplay
+            this.resetAutoPlay();
+        },
+
+        next() {
+            const nextSlide = (this.currentSlide + 1) % this.totalSlides;
+            this.goTo(nextSlide);
+        },
+
+        prev() {
+            const prevSlide = (this.currentSlide - 1 + this.totalSlides) % this.totalSlides;
+            this.goTo(prevSlide);
+        },
+
+        startAutoPlay() {
+            this.autoPlayInterval = setInterval(() => {
+                this.next();
+            }, 5000); // Change slide every 5 seconds
+        },
+
+        resetAutoPlay() {
+            if (this.autoPlayInterval) {
+                clearInterval(this.autoPlayInterval);
+                this.startAutoPlay();
+            }
+        }
+    };
+
+    // Initialize slider when DOM is loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        heroSlider.init();
+    });
+</script>
 <?php endif; ?>
 
 <!-- Featured Products -->
