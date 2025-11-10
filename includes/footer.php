@@ -62,7 +62,7 @@ $footer_categories = $pdo->query("SELECT id, name, slug FROM categories WHERE st
                     <?php if (!empty($footer_categories)): ?>
                         <?php foreach ($footer_categories as $cat): ?>
                             <li>
-                                <a href="/san-pham?category=<?= $cat['slug'] ?>" class="transition"
+                                <a href="/san-pham?category=<?= $cat['id'] ?>" class="transition"
                                     onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
                                     onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">
                                     <?= htmlspecialchars($cat['name']) ?>
