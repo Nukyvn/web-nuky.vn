@@ -23,14 +23,7 @@ $testimonials = $stmt->fetchAll();
 
 // Get promotion section
 $current_date = date('Y-m-d H:i:s');
-$stmt = $pdo->prepare("
-    SELECT * FROM promotions
-    WHERE status = 1
-    AND (countdown_end IS NULL OR countdown_end >= :current_date)
-    AND (start_date IS NULL OR start_date <= :current_date)
-    ORDER BY sort_order ASC, start_date ASC
-    LIMIT 3
-");
+$stmt = $pdo->prepare("SELECT * FROM promotions WHERE status = 1 AND (countdown_end IS NULL OR countdown_end >= :current_date) AND (start_date IS NULL OR start_date <= :current_date) ORDER BY sort_order ASC, start_date ASC LIMIT 3");
 $stmt->execute([':current_date' => $current_date]);
 $promotions = $stmt->fetchAll();
 
