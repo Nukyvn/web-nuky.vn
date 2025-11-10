@@ -24,13 +24,18 @@ $testimonials = $stmt->fetchAll();
 // Get promotion section
 $current_date = date('Y-m-d H:i:s');
 $stmt = $pdo->prepare("
-    SELECT * FROM promotions 
+    SELECT * FROM promotions
     WHERE status = 1 AND countdown_end >= :current_date
-    ORDER BY start_date ASC 
+    ORDER BY start_date ASC
     LIMIT 2
 ");
 $stmt->execute([':current_date' => $current_date]);
 $promotions = $stmt->fetchAll();
+
+// Get latest videos
+$stmt = $pdo->prepare("SELECT * FROM videos WHERE status = 1 ORDER BY created_at DESC LIMIT 6");
+$stmt->execute();
+$latest_videos = $stmt->fetchAll();
 
 // Page metadata
 $page_title = SITE_NAME . ' - Xưởng Trà Nguyên Ký';
@@ -76,16 +81,14 @@ include 'includes/header.php';
     <div class="container mx-auto px-4">
         <div class="text-center mb-12">
             <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Sản phẩm nổi bật</h2>
-            <p class="text-gray-600 max-w-2xl mx-auto">Chọn lọc những sản phẩm chất lượng cao nhất từ xưởng Nguyên Ký
-            </p>
+            <p class="text-gray-600 max-w-2xl mx-auto">Chọn lọc những sản phẩm chất lượng cao nhất từ xưởng Nguyên Ký</p>
         </div>
 
         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            <?php foreach ($featured_products as $product): 
-        $images = json_decode($product['images'], true);
-        $image = $images[0] ?? '/uploads/no-image.png';
-        $price = $product['sale_price'] ?? $product['price'];
-    ?>
+            <?php foreach ($featured_products as $product):
+                $images = json_decode($product['images'], true);
+                $image = $images[0] ?? '/uploads/no-image.png';
+            ?>
             <div class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition group product-item">
                 <a href="/san-pham/<?= $product['slug'] ?>" class="block relative overflow-hidden">
                     <img src="<?= $image ?>" alt="<?= $product['name'] ?>"
@@ -99,16 +102,14 @@ include 'includes/header.php';
 
                 <div class="p-4">
                     <h3 class="font-semibold text-lg mb-2 line-clamp-2">
-                        <a href="/san-pham/<?= $product['slug'] ?>"
-                            class="hover:text-green-600"><?= $product['name'] ?></a>
+                        <a href="/san-pham/<?= $product['slug'] ?>" class="hover:text-green-600"><?= $product['name'] ?></a>
                     </h3>
 
                     <button onclick="
-                var container = this.closest('.product-item'); 
-                var imgElement = container ? container.querySelector('.product-image') : null;
-                
-                addToCart(<?= $product['id'] ?>, imgElement);
-            " class="w-full mt-4 text-white py-2 rounded-lg transition font-semibold"
+                        var container = this.closest('.product-item');
+                        var imgElement = container ? container.querySelector('.product-image') : null;
+                        addToCart(<?= $product['id'] ?>, imgElement);
+                    " class="w-full mt-4 text-white py-2 rounded-lg transition font-semibold"
                         style="background-color: <?= COLOR_PRIMARY ?>;"
                         onmouseover="this.style.backgroundColor='#1a5e20';"
                         onmouseout="this.style.backgroundColor='<?= COLOR_PRIMARY ?>';">
@@ -130,84 +131,60 @@ include 'includes/header.php';
 <?php endif; ?>
 
 <!-- Promotion Section -->
-<div class="grid md:grid-cols-2 gap-8">
-    <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 opacity-10"></div>
-    <div class="relative z-10">
-        <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-white" style="color: <?= COLOR_PRIMARY ?>">
-            Khuyến mãi đặc biệt
-        </h2>
-    </div>
-    <?php foreach ($promotions as $promotion): 
-        $image = $promotion['banner_image'] ?: '/uploads/no-image.png';
-    ?>
-    <section class="p-6 rounded-lg shadow-xl"
-        style="background: linear-gradient(135deg, #E25848FF 0%, #EBC804FF 100%);">
-        <div class="p-6">
-            <div class="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
-                <img src="<?= $image ?>" alt="<?= $promotion['title'] ?>"
-                    class="w-full md:w-1/2 h-auto rounded-lg mb-4 md:mb-0 shadow-lg">
-                <div class="mb-6">
-                    <h2 class="text-2xl md:text-3xl font-bold mb-4 text-white"><?= $promotion['title'] ?></h2>
-                    <?php if (!empty($promotion['countdown_end'])): 
-                        $end_datetime = new DateTime($promotion['countdown_end']);
-                    ?>
-                    <h3 class="text-xl font-semibold mb-2">Thời gian còn lại:</h3>
-                    <div id="countdown-<?= $promotion['id'] ?>" class="text-2xl font-bold text-red-600"></div>
-                </div>
-
-                <script>
-                // Countdown timer
-                function startCountdown<?= $promotion['id'] ?>() {
-                    const countdownElement = document.getElementById('countdown-<?= $promotion['id'] ?>');
-                    const endTime = new Date('<?= $end_datetime->format('Y-m-d H:i:s') ?>').getTime();
-
-                    const interval = setInterval(() => {
-                        const now = new Date().getTime();
-                        const distance = endTime - now;
-
-                        if (distance < 0) {
-                            clearInterval(interval);
-                            countdownElement.innerHTML = 'Đã kết thúc';
-                            return;
-                        }
-
-                        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
-
-                        countdownElement.innerHTML =
-                            `${days}ngày ${hours}giờ ${minutes}phút ${seconds}giây`;
-                    }, 1000);
-                }
-                startCountdown<?= $promotion['id'] ?>();
-                </script>
-                <?php endif; ?>
-                <a href="<?= $promotion['link'] ?>"
-                    class="inline-block bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition">
-                    <?= $promotion['button_text'] ?? 'Xem chi tiết' ?>
-                </a>
-            </div>
+<?php if (!empty($promotions)): ?>
+<section class="py-16 bg-gradient-to-r from-green-50 to-blue-50">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Khuyến mãi đặc biệt</h2>
+            <p class="text-gray-600">Đừng bỏ lỡ các ưu đãi hấp dẫn từ Nguyên Ký</p>
         </div>
-    </section>
-    <?php endforeach; ?>
-</div>
+
+        <div class="grid md:grid-cols-2 gap-8">
+            <?php foreach ($promotions as $promotion):
+                $image = $promotion['banner_image'] ?: '/uploads/no-image.png';
+            ?>
+            <div class="p-6 rounded-lg shadow-xl" style="background: linear-gradient(135deg, #E25848FF 0%, #EBC804FF 100%);">
+                <div class="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
+                    <img src="<?= $image ?>" alt="<?= $promotion['title'] ?>"
+                        class="w-full md:w-1/2 h-auto rounded-lg mb-4 md:mb-0 shadow-lg">
+
+                    <div class="flex-1">
+                        <h3 class="text-2xl md:text-3xl font-bold mb-4 text-white"><?= $promotion['title'] ?></h3>
+
+                        <?php if (!empty($promotion['countdown_end'])): ?>
+                        <div class="mb-6">
+                            <h4 class="text-xl font-semibold mb-2 text-white">Thời gian còn lại:</h4>
+                            <div id="countdown-<?= $promotion['id'] ?>" class="text-2xl font-bold text-red-600 bg-white px-4 py-2 rounded-lg inline-block"></div>
+                        </div>
+                        <?php endif; ?>
+
+                        <?php if (!empty($promotion['link'])): ?>
+                        <a href="<?= $promotion['link'] ?>"
+                            class="inline-block bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition shadow-lg">
+                            <?= $promotion['button_text'] ?? 'Xem chi tiết' ?>
+                        </a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+            </div>
+            <?php endforeach; ?>
+        </div>
+    </div>
+</section>
+<?php endif; ?>
 
 <!-- About Section -->
 <section class="py-16" style="background-color: <?= COLOR_SECONDARY ?>">
     <div class="container mx-auto px-4">
         <div class="grid md:grid-cols-2 gap-12 items-center">
             <div>
-                <h2 class="text-3xl md:text-4xl font-bold mb-6" style="color: <?= COLOR_PRIMARY ?>">Về Nguyên Ký
-                </h2>
+                <h2 class="text-3xl md:text-4xl font-bold mb-6" style="color: <?= COLOR_PRIMARY ?>">Về Nguyên Ký</h2>
                 <p class="text-gray-700 mb-4 text-lg">
-                    Xưởng trà Nguyên Ký tự hào là đơn vị hàng đầu trong lĩnh vực sản xuất và cung cấp nguyên
-                    liệu trà
+                    Xưởng trà Nguyên Ký tự hào là đơn vị hàng đầu trong lĩnh vực sản xuất và cung cấp nguyên liệu trà
                     chất lượng cao cho ngành pha chế tại Việt Nam.
                 </p>
                 <p class="text-gray-700 mb-6 text-lg">
-                    Với hơn 10 năm kinh nghiệm, chúng tôi cam kết mang đến những sản phẩm đạt tiêu chuẩn vệ sinh
-                    an toàn
+                    Với hơn 10 năm kinh nghiệm, chúng tôi cam kết mang đến những sản phẩm đạt tiêu chuẩn vệ sinh an toàn
                     thực phẩm, đáp ứng nhu cầu của hàng ngàn quán trà sữa và cà phê trên toàn quốc.
                 </p>
                 <a href="/ve-chung-toi"
@@ -226,9 +203,7 @@ include 'includes/header.php';
 <section class="py-16 bg-white">
     <div class="container mx-auto px-4">
         <div class="text-center mb-12">
-            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Dịch vụ của
-                chúng tôi
-            </h2>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Dịch vụ của chúng tôi</h2>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8">
@@ -240,8 +215,7 @@ include 'includes/header.php';
                     </svg>
                 </div>
                 <h3 class="text-xl font-bold mb-3">Sản xuất OEM</h3>
-                <p class="text-gray-600">Đóng gói theo thương hiệu riêng của bạn với thiết kế bao bì chuyên
-                    nghiệp</p>
+                <p class="text-gray-600">Đóng gói theo thương hiệu riêng của bạn với thiết kế bao bì chuyên nghiệp</p>
             </div>
 
             <div class="text-center p-6 bg-gray-50 rounded-lg hover:shadow-lg transition">
@@ -327,8 +301,7 @@ include 'includes/header.php';
 <section class="py-16 bg-white">
     <div class="container mx-auto px-4">
         <div class="text-center mb-12">
-            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Tin tức & Bài
-                viết</h2>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Tin tức & Bài viết</h2>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8">
@@ -345,8 +318,7 @@ include 'includes/header.php';
                             class="hover:text-green-600"><?= $article['title'] ?></a>
                     </h3>
                     <p class="text-gray-600 mb-4 line-clamp-3"><?= $article['excerpt'] ?></p>
-                    <a href="/bai-viet/<?= $article['slug'] ?>" class="text-green-600 font-semibold hover:underline">Đọc
-                        tiếp →</a>
+                    <a href="/bai-viet/<?= $article['slug'] ?>" class="text-green-600 font-semibold hover:underline">Đọc tiếp →</a>
                 </div>
             </article>
             <?php endforeach; ?>
@@ -356,37 +328,27 @@ include 'includes/header.php';
 <?php endif; ?>
 
 <!-- Video Section -->
+<?php if (!empty($latest_videos)): ?>
 <section class="py-16" style="background-color: <?= COLOR_SECONDARY ?>">
     <div class="container mx-auto px-4">
         <div class="text-center mb-12">
-            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Thư viện Video
-            </h2>
-            <p class="text-gray-700 max-w-2xl mx-auto">Khám phá quy trình sản xuất, hướng dẫn pha chế và nhiều
-                hơn
-                nữa</p>
+            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">Thư viện Video</h2>
+            <p class="text-gray-700 max-w-2xl mx-auto">Khám phá quy trình sản xuất, hướng dẫn pha chế và nhiều hơn nữa</p>
         </div>
 
         <div class="grid md:grid-cols-3 gap-8">
-            <?php
-        // Fetch 3 latest videos
-        $stmt = $pdo->prepare("SELECT * FROM videos WHERE status = 1 ORDER BY created_at DESC LIMIT 6");
-        $stmt->execute();
-        $latest_videos = $stmt->fetchAll();
-
-        foreach ($latest_videos as $video):
-    ?>
+            <?php foreach ($latest_videos as $video):
+                // Xử lý thumbnail
+                $thumb = $video['thumbnail'];
+                if (empty($thumb) && $video['video_type'] === 'youtube' && !empty($video['video_url'])) {
+                    preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^\&\?]+)/', $video['video_url'], $matches);
+                    $youtube_id = $matches[1] ?? null;
+                    if ($youtube_id) {
+                        $thumb = "https://img.youtube.com/vi/$youtube_id/hqdefault.jpg";
+                    }
+                }
+            ?>
             <article class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl transition">
-                <?php
-        // Xử lý thumbnail
-        $thumb = $video['thumbnail'];
-        if (empty($thumb) && $video['video_type'] === 'youtube' && !empty($video['video_url'])) {
-            preg_match('/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^\&\?]+)/', $video['video_url'], $matches);
-            $youtube_id = $matches[1] ?? null;
-            if ($youtube_id) {
-                $thumb = "https://img.youtube.com/vi/$youtube_id/hqdefault.jpg";
-            }
-        }
-    ?>
                 <a href="/video/<?= $video['slug'] ?>" class="block relative">
                     <div class="relative h-48 bg-gray-900">
                         <?php if ($thumb): ?>
@@ -400,12 +362,9 @@ include 'includes/header.php';
                             </svg>
                         </div>
                         <?php endif; ?>
-                        <div
-                            class="absolute inset-0 flex items-center justify-center bg-yellow bg-opacity-10 opacity-10 hover:opacity-50 transition">
-                            <svg class="w-12 h-12 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M6.5 5.5v9l7-4.5-7-4.5zM10 0C4.477 0 0 4.477 0 10s4.477 10 10 10 10-4.477 10-10S15.523 0 10 0zM10 18.182A8.182 8.182 0 1110 1.818a8.182 8.182 0 010 16.364z">
-                                </path>
+                        <div class="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 hover:bg-opacity-40 transition">
+                            <svg class="w-16 h-16 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
                             </svg>
                         </div>
                     </div>
@@ -419,8 +378,16 @@ include 'includes/header.php';
             </article>
             <?php endforeach; ?>
         </div>
+
+        <div class="text-center mt-8">
+            <a href="/video"
+                class="inline-block border-2 border-green-600 text-green-600 px-8 py-3 rounded-lg font-semibold hover:bg-green-600 hover:text-white transition">
+                Xem tất cả video
+            </a>
+        </div>
     </div>
 </section>
+<?php endif; ?>
 
 <!-- CTA Section -->
 <section class="py-16 bg-green-600 text-white">
@@ -440,29 +407,41 @@ include 'includes/header.php';
     </div>
 </section>
 
+<!-- Countdown Timer Script -->
+<?php if (!empty($promotions)): ?>
 <script>
-// Countdown Timer
 <?php foreach ($promotions as $promotion):
-    $end_datetime = new DateTime($promotion['countdown_end']);
-    $end_timestamp = $end_datetime->getTimestamp() * 1000; // Convert to milliseconds
-    ?>
-var countdownElement<?= $promotion['id'] ?> = document.getElementById('countdown-<?= $promotion['id'] ?>');
-var countdownInterval<?= $promotion['id'] ?> = setInterval(function() {
-    var now = new Date().getTime();
-    var distance = <?= $end_timestamp ?> - now;
-    if (distance < 0) {
-        clearInterval(countdownInterval<?= $promotion['id'] ?>);
-        countdownElement<?= $promotion['id'] ?>.innerHTML = "Ưu đãi đã kết thúc";
-        return;
-    }
-    var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-    countdownElement<?= $promotion['id'] ?>.innerHTML = days + "ngày " + hours + "giờ " +
-        minutes + "phút " + seconds + "giây ";
-}, 1000);
-<?php endforeach; ?>
+    if (!empty($promotion['countdown_end'])):
+        $end_datetime = new DateTime($promotion['countdown_end']);
+        $end_timestamp = $end_datetime->getTimestamp() * 1000;
+?>
+(function() {
+    var countdownElement = document.getElementById('countdown-<?= $promotion['id'] ?>');
+    if (!countdownElement) return;
+
+    var countdownInterval = setInterval(function() {
+        var now = new Date().getTime();
+        var distance = <?= $end_timestamp ?> - now;
+
+        if (distance < 0) {
+            clearInterval(countdownInterval);
+            countdownElement.innerHTML = "Ưu đãi đã kết thúc";
+            return;
+        }
+
+        var days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        countdownElement.innerHTML = days + " ngày " + hours + " giờ " + minutes + " phút " + seconds + " giây";
+    }, 1000);
+})();
+<?php
+    endif;
+endforeach;
+?>
 </script>
+<?php endif; ?>
 
 <?php include ROOT_PATH . '/includes/footer.php'; ?>
