@@ -24,10 +24,12 @@ $testimonials = $stmt->fetchAll();
 // Get promotion section
 $current_date = date('Y-m-d H:i:s');
 $stmt = $pdo->prepare("
-    SELECT * FROM promotions 
-    WHERE status = 1 AND countdown_end >= :current_date
-    ORDER BY start_date ASC 
-    LIMIT 2
+    SELECT * FROM promotions
+    WHERE status = 1
+    AND (countdown_end IS NULL OR countdown_end >= :current_date)
+    AND (start_date IS NULL OR start_date <= :current_date)
+    ORDER BY sort_order ASC, start_date ASC
+    LIMIT 3
 ");
 $stmt->execute([':current_date' => $current_date]);
 $promotions = $stmt->fetchAll();
@@ -130,68 +132,111 @@ include 'includes/header.php';
 <?php endif; ?>
 
 <!-- Promotion Section -->
-<div class="grid md:grid-cols-2 gap-8">
-    <div class="absolute inset-0 bg-gradient-to-r from-green-400 to-blue-500 opacity-10"></div>
-    <div class="relative z-10">
-        <h2 class="text-3xl md:text-4xl font-bold text-center mb-8 text-white" style="color: <?= COLOR_PRIMARY ?>">
-            Khuyến mãi đặc biệt
-        </h2>
-    </div>
-    <?php foreach ($promotions as $promotion): 
-        $image = $promotion['banner_image'] ?: '/uploads/no-image.png';
-    ?>
-    <section class="p-6 rounded-lg shadow-xl"
-        style="background: linear-gradient(135deg, #E25848FF 0%, #EBC804FF 100%);">
-        <div class="p-6">
-            <div class="flex flex-col md:flex-row items-center md:items-start md:space-x-6">
-                <img src="<?= $image ?>" alt="<?= $promotion['title'] ?>"
-                    class="w-full md:w-1/2 h-auto rounded-lg mb-4 md:mb-0 shadow-lg">
-                <div class="mb-6">
-                    <h2 class="text-2xl md:text-3xl font-bold mb-4 text-white"><?= $promotion['title'] ?></h2>
-                    <?php if (!empty($promotion['countdown_end'])): 
-                        $end_datetime = new DateTime($promotion['countdown_end']);
-                    ?>
-                    <h3 class="text-xl font-semibold mb-2">Thời gian còn lại:</h3>
-                    <div id="countdown-<?= $promotion['id'] ?>" class="text-2xl font-bold text-red-600"></div>
+<?php if (!empty($promotions)):
+    $promo_count = count($promotions);
+    $grid_class = $promo_count === 1 ? 'grid-cols-1' : 'md:grid-cols-2';
+?>
+<section class="py-16 relative overflow-hidden" style="background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);">
+    <div class="container mx-auto px-4">
+        <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">
+                Khuyến mãi đặc biệt
+            </h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">Đừng bỏ lỡ các chương trình ưu đãi hấp dẫn từ Nguyên Ký</p>
+        </div>
+
+        <div class="grid <?= $grid_class ?> gap-8 <?= $promo_count === 1 ? 'max-w-4xl mx-auto' : '' ?>">
+            <?php foreach ($promotions as $promotion):
+                $image = $promotion['banner_image'] ?: '/uploads/no-image.png';
+            ?>
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden hover:shadow-3xl transition-all duration-300 transform hover:-translate-y-2">
+                <div class="relative">
+                    <img src="<?= htmlspecialchars($image) ?>" alt="<?= htmlspecialchars($promotion['title']) ?>"
+                        class="w-full h-64 object-cover">
+                    <div class="absolute top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg">
+                        <?= htmlspecialchars($promotion['discount_text']) ?>
+                    </div>
                 </div>
 
-                <script>
-                // Countdown timer
-                function startCountdown<?= $promotion['id'] ?>() {
-                    const countdownElement = document.getElementById('countdown-<?= $promotion['id'] ?>');
-                    const endTime = new Date('<?= $end_datetime->format('Y-m-d H:i:s') ?>').getTime();
+                <div class="p-8">
+                    <h3 class="text-2xl md:text-3xl font-bold mb-4" style="color: <?= COLOR_PRIMARY ?>">
+                        <?= htmlspecialchars($promotion['title']) ?>
+                    </h3>
 
-                    const interval = setInterval(() => {
-                        const now = new Date().getTime();
-                        const distance = endTime - now;
+                    <?php if (!empty($promotion['description'])): ?>
+                    <p class="text-gray-600 mb-6 line-clamp-3">
+                        <?= htmlspecialchars($promotion['description']) ?>
+                    </p>
+                    <?php endif; ?>
 
-                        if (distance < 0) {
-                            clearInterval(interval);
-                            countdownElement.innerHTML = 'Đã kết thúc';
-                            return;
-                        }
+                    <?php if (!empty($promotion['countdown_end'])):
+                        $end_datetime = new DateTime($promotion['countdown_end']);
+                    ?>
+                    <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-lg p-4 mb-6">
+                        <h4 class="text-sm font-semibold text-gray-700 mb-2">⏰ Thời gian còn lại:</h4>
+                        <div id="countdown-<?= $promotion['id'] ?>" class="text-2xl font-bold text-red-600"></div>
+                    </div>
 
-                        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
-                        const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-                        const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-                        const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+                    <script>
+                    (function() {
+                        const countdownElement = document.getElementById('countdown-<?= $promotion['id'] ?>');
+                        const endTime = new Date('<?= $end_datetime->format('Y-m-d H:i:s') ?>').getTime();
 
-                        countdownElement.innerHTML =
-                            `${days}ngày ${hours}giờ ${minutes}phút ${seconds}giây`;
-                    }, 1000);
-                }
-                startCountdown<?= $promotion['id'] ?>();
-                </script>
-                <?php endif; ?>
-                <a href="<?= $promotion['link'] ?>"
-                    class="inline-block bg-green-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-green-700 transition">
-                    <?= $promotion['button_text'] ?? 'Xem chi tiết' ?>
-                </a>
+                        const updateCountdown = () => {
+                            const now = new Date().getTime();
+                            const distance = endTime - now;
+
+                            if (distance < 0) {
+                                countdownElement.innerHTML = '<span class="text-gray-500">Đã kết thúc</span>';
+                                return;
+                            }
+
+                            const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                            const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                            const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                            const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                            countdownElement.innerHTML = `
+                                <div class="flex gap-2 flex-wrap">
+                                    <div class="bg-white px-3 py-2 rounded-lg shadow-sm">
+                                        <span class="font-bold">${days}</span>
+                                        <span class="text-xs text-gray-600">ngày</span>
+                                    </div>
+                                    <div class="bg-white px-3 py-2 rounded-lg shadow-sm">
+                                        <span class="font-bold">${hours}</span>
+                                        <span class="text-xs text-gray-600">giờ</span>
+                                    </div>
+                                    <div class="bg-white px-3 py-2 rounded-lg shadow-sm">
+                                        <span class="font-bold">${minutes}</span>
+                                        <span class="text-xs text-gray-600">phút</span>
+                                    </div>
+                                    <div class="bg-white px-3 py-2 rounded-lg shadow-sm">
+                                        <span class="font-bold">${seconds}</span>
+                                        <span class="text-xs text-gray-600">giây</span>
+                                    </div>
+                                </div>
+                            `;
+                        };
+
+                        updateCountdown();
+                        setInterval(updateCountdown, 1000);
+                    })();
+                    </script>
+                    <?php endif; ?>
+
+                    <?php if (!empty($promotion['button_link'])): ?>
+                    <a href="<?= htmlspecialchars($promotion['button_link']) ?>"
+                        class="inline-block w-full text-center bg-gradient-to-r from-green-600 to-green-700 text-white px-8 py-4 rounded-lg font-semibold hover:from-green-700 hover:to-green-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-105">
+                        <?= htmlspecialchars($promotion['button_text'] ?? 'Xem chi tiết') ?> →
+                    </a>
+                    <?php endif; ?>
+                </div>
             </div>
+            <?php endforeach; ?>
         </div>
-    </section>
-    <?php endforeach; ?>
-</div>
+    </div>
+</section>
+<?php endif; ?>
 
 <!-- About Section -->
 <section class="py-16" style="background-color: <?= COLOR_SECONDARY ?>">
@@ -440,29 +485,5 @@ include 'includes/header.php';
     </div>
 </section>
 
-<script>
-// Countdown Timer
-<?php foreach ($promotions as $promotion):
-    $end_datetime = new DateTime($promotion['countdown_end']);
-    $end_timestamp = $end_datetime->getTimestamp() * 1000; // Convert to milliseconds
-    ?>
-var countdownElement<?= $promotion['id'] ?> = document.getElementById('countdown-<?= $promotion['id'] ?>');
-var countdownInterval<?= $promotion['id'] ?> = setInterval(function() {
-    var now = new Date().getTime();
-    var distance = <?= $end_timestamp ?> - now;
-    if (distance < 0) {
-        clearInterval(countdownInterval<?= $promotion['id'] ?>);
-        countdownElement<?= $promotion['id'] ?>.innerHTML = "Ưu đãi đã kết thúc";
-        return;
-    }
-    var days = Math.floor(distance / (1000 * 60 * 60 * 24));
-    var hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-    var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
-    var seconds = Math.floor((distance % (1000 * 60)) / 1000);
-    countdownElement<?= $promotion['id'] ?>.innerHTML = days + "ngày " + hours + "giờ " +
-        minutes + "phút " + seconds + "giây ";
-}, 1000);
-<?php endforeach; ?>
-</script>
 
 <?php include ROOT_PATH . '/includes/footer.php'; ?>
