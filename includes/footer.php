@@ -1,3 +1,8 @@
+<?php
+// Lấy danh mục sản phẩm từ database để hiển thị trong footer
+$footer_categories = $pdo->query("SELECT id, name, slug FROM categories WHERE status = 1 ORDER BY sort_order ASC, name ASC LIMIT 5")->fetchAll();
+?>
+
 <footer class="mt-auto" style="background-color: <?= COLOR_PRIMARY ?>; color: <?= COLOR_SECONDARY ?>;">
     <div class="container mx-auto px-4 py-12">
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -54,20 +59,21 @@
             <div>
                 <h3 class="text-white text-lg font-bold mb-4">Sản phẩm nổi bật</h3>
                 <ul class="space-y-2">
-                    <li><a href="/san-pham?category=tra-den" class="transition"
-                            onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
-                            onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">Trà đen</a></li>
-                    <li><a href="/san-pham?category=bot-kem" class="transition"
-                            onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
-                            onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">Bột kem béo</a></li>
-                    <li><a href="/san-pham?category=tra-gao-rang" class="transition"
-                            onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
-                            onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">Trà gạo rang</a>
-                    </li>
-                    <li><a href="/san-pham?category=tra-tui-loc" class="transition"
-                            onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
-                            onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">Trà túi lọc</a>
-                    </li>
+                    <?php if (!empty($footer_categories)): ?>
+                        <?php foreach ($footer_categories as $cat): ?>
+                            <li>
+                                <a href="/san-pham?category=<?= $cat['slug'] ?>" class="transition"
+                                    onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
+                                    onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">
+                                    <?= htmlspecialchars($cat['name']) ?>
+                                </a>
+                            </li>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <li><a href="/san-pham" class="transition"
+                                onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
+                                onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">Tất cả sản phẩm</a></li>
+                    <?php endif; ?>
                     <li><a href="/dich-vu" class="transition" onmouseover="this.style.color='<?= COLOR_ACCENT ?>'"
                             onmouseout="this.style.color='<?= COLOR_SECONDARY ?>'">Dịch vụ OEM</a></li>
                 </ul>
