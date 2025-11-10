@@ -168,16 +168,25 @@ include 'includes/header.php';
                         <?php else: ?>
                         <?php foreach ($promotions as $promo):
                             $now = new DateTime();
-                            $start = new DateTime($promo['start_date']);
-                            $end = new DateTime($promo['countdown_end']);
+                            $time_status = '<span class="badge bg-warning">Chưa có thời gian</span>';
 
-                            if ($now >= $start && $now <= $end) {
-                                $time_status = '<span class="badge bg-success">Đang diễn ra</span>';
-                            } elseif ($now < $start) {
-                                $days_until = $now->diff($start)->days;
-                                $time_status = '<span class="badge bg-info">Còn ' . $days_until . ' ngày</span>';
-                            } else {
-                                $time_status = '<span class="badge bg-secondary">Đã kết thúc</span>';
+                            // Check if both dates exist
+                            if (!empty($promo['start_date']) && !empty($promo['countdown_end'])) {
+                                try {
+                                    $start = new DateTime($promo['start_date']);
+                                    $end = new DateTime($promo['countdown_end']);
+
+                                    if ($now >= $start && $now <= $end) {
+                                        $time_status = '<span class="badge bg-success">Đang diễn ra</span>';
+                                    } elseif ($now < $start) {
+                                        $days_until = $now->diff($start)->days;
+                                        $time_status = '<span class="badge bg-info">Còn ' . $days_until . ' ngày</span>';
+                                    } else {
+                                        $time_status = '<span class="badge bg-secondary">Đã kết thúc</span>';
+                                    }
+                                } catch (Exception $e) {
+                                    $time_status = '<span class="badge bg-warning">Lỗi thời gian</span>';
+                                }
                             }
                         ?>
                         <tr>
@@ -201,8 +210,17 @@ include 'includes/header.php';
                             </td>
                             <td>
                                 <small>
+                                    <?php if (!empty($promo['start_date'])): ?>
                                     <strong>Bắt đầu:</strong> <?= date('d/m/Y H:i', strtotime($promo['start_date'])) ?><br>
+                                    <?php else: ?>
+                                    <strong>Bắt đầu:</strong> <span class="text-muted">Chưa cài</span><br>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($promo['countdown_end'])): ?>
                                     <strong>Kết thúc:</strong> <?= date('d/m/Y H:i', strtotime($promo['countdown_end'])) ?>
+                                    <?php else: ?>
+                                    <strong>Kết thúc:</strong> <span class="text-muted">Chưa cài</span>
+                                    <?php endif; ?>
                                 </small>
                                 <br>
                                 <?= $time_status ?>
