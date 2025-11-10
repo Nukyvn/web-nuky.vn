@@ -1,0 +1,84 @@
+# Enable Rewrite Engine
+RewriteEngine On
+RewriteBase /
+
+# Force HTTPS (Optional - uncomment in production)
+# RewriteCond %{HTTPS} off
+# RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Remove www (Optional)
+# RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+# RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect config and sensitive files
+<FilesMatch "^(config\.php|functions\.php|\.env|\.git)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Frontend Routes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Homepage
+RewriteRule ^$ index.php [L]
+
+# Products
+RewriteRule ^san-pham$ san-pham/index.php [L]
+RewriteRule ^san-pham/([a-z0-9-]+)$ san-pham/detail.php?slug=$1 [L]
+
+# Cart & Checkout
+RewriteRule ^gio-hang$ gio-hang.php [L]
+RewriteRule ^thanh-toan$ thanh-toan.php [L]
+
+# Articles
+RewriteRule ^bai-viet$ bai-viet/index.php [L]
+RewriteRule ^bai-viet/([a-z0-9-]+)$ bai-viet/detail.php?slug=$1 [L]
+
+# Videos
+RewriteRule ^video$ video/index.php [L]
+RewriteRule ^video/([a-z0-9-]+)$ video/detail.php?slug=$1 [L]
+
+# Static Pages
+RewriteRule ^ve-chung-toi$ ve-chung-toi.php [L]
+RewriteRule ^dich-vu$ dich-vu.php [L]
+RewriteRule ^lien-he$ lien-he.php [L]
+
+# PHP Settings
+php_value upload_max_filesize 10M
+php_value post_max_size 10M
+php_value max_execution_time 300
+php_value max_input_time 300
+
+# Compression
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/plain text/xml text/css text/javascript application/javascript
+</IfModule>
+
+# Browser Caching
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpg "access plus 1 year"
+    ExpiresByType image/jpeg "access plus 1 year"
+    ExpiresByType image/gif "access plus 1 year"
+    ExpiresByType image/png "access plus 1 year"
+    ExpiresByType image/webp "access plus 1 year"
+    ExpiresByType text/css "access plus 1 month"
+    ExpiresByType application/javascript "access plus 1 month"
+    ExpiresByType text/javascript "access plus 1 month"
+</IfModule>
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+    Header set X-Frame-Options "SAMEORIGIN"
+    Header set X-XSS-Protection "1; mode=block"
+    Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# Error Pages (Optional)
+ErrorDocument 404 /404.php
+ErrorDocument 500 /500.php
